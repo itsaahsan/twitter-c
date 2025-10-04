@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { Image, Smile, X } from 'lucide-react';
+import { Image, Smile, X, Video } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 
 export default function TweetComposer() {
   const { user } = useAuth();
@@ -9,8 +10,12 @@ export default function TweetComposer() {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [videoPreview, setVideoPreview] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   const maxLength = 280;
 
@@ -20,10 +25,13 @@ export default function TweetComposer() {
 
     setIsSubmitting(true);
     try {
-      await addTweet(content.trim(), selectedImage);
+      const media = selectedImage || selectedVideo;
+      await addTweet(content.trim(), media);
       setContent('');
       setSelectedImage(null);
+      setSelectedVideo(null);
       setImagePreview(null);
+      setVideoPreview(null);
     } catch (error) {
       console.error('Error posting tweet:', error);
     } finally {
@@ -34,13 +42,34 @@ export default function TweetComposer() {
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Remove any existing video
+      if (selectedVideo) {
+        removeVideo();
+      }
       setSelectedImage(file);
+      setSelectedVideo(null);
 
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target.result);
+        setVideoPreview(null);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleVideoSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Remove any existing image
+      if (selectedImage) {
+        removeImage();
+      }
+      setSelectedVideo(file);
+      setSelectedImage(null);
+
+      setVideoPreview(URL.createObjectURL(file));
+      setImagePreview(null);
     }
   };
 
@@ -48,6 +77,21 @@ export default function TweetComposer() {
     setSelectedImage(null);
     setImagePreview(null);
     fileInputRef.current.value = '';
+  };
+
+  const removeVideo = () => {
+    setSelectedVideo(null);
+    setVideoPreview(null);
+    videoInputRef.current.value = '';
+  };
+
+  const handleEmojiClick = (emojiData) => {
+    setContent(prevContent => prevContent + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const toggleEmojiPicker = () => {
+    setShowEmojiPicker(!showEmojiPicker);
   };
 
   const remainingChars = maxLength - content.length;
@@ -82,6 +126,34 @@ export default function TweetComposer() {
               </div>
             )}
 
+            {videoPreview && (
+              <div className="video-preview">
+                <video
+                  src={videoPreview}
+                  controls
+                  style={{ width: '100%', maxHeight: '300px', borderRadius: '12px' }}
+                />
+                <button
+                  type="button"
+                  className="remove-image-btn"
+                  onClick={removeVideo}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            {showEmojiPicker && (
+              <div className="emoji-picker-container">
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  theme="auto"
+                  width={300}
+                  height={350}
+                />
+              </div>
+            )}
+
             <div className="composer-footer">
               <div className="composer-actions">
                 <input
@@ -89,6 +161,13 @@ export default function TweetComposer() {
                   ref={fileInputRef}
                   onChange={handleImageSelect}
                   accept="image/*"
+                  style={{ display: 'none' }}
+                />
+                <input
+                  type="file"
+                  ref={videoInputRef}
+                  onChange={handleVideoSelect}
+                  accept="video/*"
                   style={{ display: 'none' }}
                 />
                 <button
@@ -99,7 +178,15 @@ export default function TweetComposer() {
                 >
                   <Image size={20} />
                 </button>
-                <button type="button" className="action-btn" title="Add emoji">
+                <button
+                  type="button"
+                  className="action-btn"
+                  title="Add video"
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  <Video size={20} />
+                </button>
+                <button type="button" className="action-btn" title="Add emoji" onClick={toggleEmojiPicker}>
                   <Smile size={20} />
                 </button>
               </div>

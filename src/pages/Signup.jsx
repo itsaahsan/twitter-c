@@ -56,7 +56,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-container signup-container">
       <div className="auth-card">
         <div className="auth-header">
           <h1>Twitter Clone</h1>

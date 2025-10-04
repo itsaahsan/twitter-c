@@ -18,6 +18,17 @@ export function AuthProvider({ children }) {
     const savedUser = localStorage.getItem('twitter_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+    } else {
+      // Auto-login the first sample user for demo purposes
+      const demoUser = {
+        id: "1",
+        username: "johndoe",
+        displayName: "John Doe",
+        email: "john@example.com",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=johndoe"
+      };
+      localStorage.setItem('twitter_user', JSON.stringify(demoUser));
+      setUser(demoUser);
     }
     setLoading(false);
   }, []);

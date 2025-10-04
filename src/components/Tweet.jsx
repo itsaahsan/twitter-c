@@ -1,18 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Bookmark } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Bookmark, Trash2 } from 'lucide-react';
 import { renderTweetText } from '../utils/textParsing';
 
 export default function Tweet({ tweet }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { likeTweet, retweet, addReply, bookmarkTweet, isBookmarked } = useData();
+  const { likeTweet, retweet, addReply, bookmarkTweet, isBookmarked, deleteTweet, users } = useData();
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const isLiked = tweet.likes.includes(user?.id);
   const isRetweeted = tweet.retweets.includes(user?.id);
@@ -41,9 +56,24 @@ export default function Tweet({ tweet }) {
     setIsSubmittingReply(false);
   };
 
+  const handleDeleteTweet = () => {
+    if (window.confirm('Are you sure you want to delete this tweet?')) {
+      deleteTweet(tweet.id);
+    }
+    setShowMenu(false);
+  };
+
   const handleProfileClick = (e) => {
     e.stopPropagation();
     navigate(`/profile/${tweet.author.id}`);
+  };
+
+  const handleMentionClick = (username) => {
+    // Find the user by username
+    const mentionedUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (mentionedUser) {
+      navigate(`/profile/${mentionedUser.id}`);
+    }
   };
 
   return (
@@ -67,18 +97,43 @@ export default function Tweet({ tweet }) {
                 {formatDistanceToNow(new Date(tweet.createdAt))} ago
               </span>
             </div>
-            <button className="tweet-menu">
-              <MoreHorizontal size={16} />
-            </button>
+            <div className="tweet-menu-container" ref={menuRef}>
+              <button
+                className="tweet-menu"
+                onClick={() => setShowMenu(!showMenu)}
+              >
+                <MoreHorizontal size={16} />
+              </button>
+
+              {showMenu && (
+                <div className="tweet-dropdown-menu">
+                  {tweet.authorId === user?.id && (
+                    <button
+                      className="dropdown-item delete-item"
+                      onClick={handleDeleteTweet}
+                    >
+                      <Trash2 size={16} />
+                      Delete tweet
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="tweet-text">
-            <p>{renderTweetText(tweet.content)}</p>
+            <p>{renderTweetText(tweet.content, handleMentionClick)}</p>
           </div>
 
           {tweet.image && (
             <div className="tweet-image">
               <img src={tweet.image} alt="Tweet attachment" />
+            </div>
+          )}
+
+          {tweet.video && (
+            <div className="tweet-video">
+              <video src={tweet.video} controls style={{ width: '100%', borderRadius: '12px' }} />
             </div>
           )}
 

@@ -16,6 +16,7 @@ export function DataProvider({ children }) {
   const { user, refreshUser } = useAuth();
   const [tweets, setTweets] = useState([]);
   const [users, setUsers] = useState([]);
+  const [stories, setStories] = useState([]);
 
   useEffect(() => {
     // Initialize sample data if none exists
@@ -23,31 +24,34 @@ export function DataProvider({ children }) {
 
     const savedTweets = JSON.parse(localStorage.getItem('twitter_tweets') || '[]');
     const savedUsers = JSON.parse(localStorage.getItem('twitter_users') || '[]');
+    const savedStories = JSON.parse(localStorage.getItem('twitter_stories') || '[]');
     setTweets(savedTweets);
     setUsers(savedUsers);
+    setStories(savedStories);
   }, []);
 
-  const addTweet = async (content, image = null) => {
+  const addTweet = async (content, media = null) => {
     if (!user) return;
 
-    if (image) {
-      // Convert image file to base64 for localStorage
-      const imageUrl = await new Promise((resolve) => {
+    if (media) {
+      // Convert media file to base64 for localStorage
+      const mediaUrl = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(image);
+        reader.readAsDataURL(media);
       });
-      createTweetWithImage(content, imageUrl);
+      createTweetWithMedia(content, mediaUrl, media.type.startsWith('video/') ? 'video' : 'image');
     } else {
-      createTweetWithImage(content, null);
+      createTweetWithMedia(content, null, null);
     }
   };
 
-  const createTweetWithImage = (content, imageUrl) => {
+  const createTweetWithMedia = (content, mediaUrl, mediaType) => {
     const newTweet = {
       id: Date.now().toString(),
       content,
-      image: imageUrl,
+      image: mediaType === 'image' ? mediaUrl : null,
+      video: mediaType === 'video' ? mediaUrl : null,
       authorId: user.id,
       author: {
         id: user.id,
@@ -183,6 +187,71 @@ export function DataProvider({ children }) {
     createNotification('reply', user, tweet.authorId, tweet.content.substring(0, 50));
   };
 
+  const createStory = (media, type = 'image') => {
+    if (!user) return;
+
+    const story = {
+      id: Date.now().toString(),
+      authorId: user.id,
+      author: {
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        avatar: user.avatar,
+      },
+      media: media,
+      type: type, // 'image' or 'video'
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      views: [],
+    };
+
+    const updatedStories = [...stories, story];
+    setStories(updatedStories);
+    localStorage.setItem('twitter_stories', JSON.stringify(updatedStories));
+  };
+
+  const addStoryView = (storyId) => {
+    if (!user) return;
+
+    const updatedStories = stories.map(story => {
+      if (story.id === storyId && !story.views.find(v => v.userId === user.id)) {
+        return {
+          ...story,
+          views: [...story.views, {
+            userId: user.id,
+            username: user.username,
+            avatar: user.avatar,
+            viewedAt: new Date().toISOString(),
+          }],
+        };
+      }
+      return story;
+    });
+
+    setStories(updatedStories);
+    localStorage.setItem('twitter_stories', JSON.stringify(updatedStories));
+  };
+
+  const getUserStories = (userId) => {
+    return stories.filter(story => story.authorId === userId && new Date(story.expiresAt) > new Date());
+  };
+
+  const getActiveStories = () => {
+    const validStories = stories.filter(story => new Date(story.expiresAt) > new Date());
+    const uniqueAuthors = [...new Set(validStories.map(s => s.authorId))];
+
+    return uniqueAuthors.map(authorId => {
+      const userStories = validStories.filter(s => s.authorId === authorId);
+      return {
+        authorId: authorId,
+        author: userStories[0].author,
+        stories: userStories,
+        totalViews: userStories.reduce((sum, story) => sum + story.views.length, 0),
+      };
+    });
+  };
+
   const followUser = (targetUserId) => {
     if (!user) return;
 
@@ -291,9 +360,24 @@ export function DataProvider({ children }) {
     return savedBookmarks.some(b => b.userId === user.id && b.tweetId === tweetId);
   };
 
+  const deleteTweet = (tweetId) => {
+    if (!user) return;
+
+    const tweet = tweets.find(t => t.id === tweetId);
+    if (!tweet) return;
+
+    // Only allow deletion by the tweet author
+    if (tweet.authorId !== user.id) return;
+
+    const updatedTweets = tweets.filter(t => t.id !== tweetId);
+    setTweets(updatedTweets);
+    localStorage.setItem('twitter_tweets', JSON.stringify(updatedTweets));
+  };
+
   const value = {
     tweets,
     users,
+    stories,
     addTweet,
     likeTweet,
     retweet,
@@ -305,6 +389,11 @@ export function DataProvider({ children }) {
     getFeedTweets,
     bookmarkTweet,
     isBookmarked,
+    deleteTweet,
+    createStory,
+    addStoryView,
+    getUserStories,
+    getActiveStories,
   };
 
   return (

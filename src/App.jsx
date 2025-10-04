@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -11,6 +12,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import Messages from './pages/Messages';
 import More from './pages/More';
 import Bookmarks from './pages/Bookmarks';
+import Admin from './pages/Admin';
 import FollowersFollowing from './pages/FollowersFollowing';
 import Grok from './pages/Grok';
 import Communities from './pages/Communities';
@@ -18,6 +20,7 @@ import Premium from './pages/Premium';
 import VerifiedOrgs from './pages/VerifiedOrgs';
 import { useAuth } from './context/AuthContext';
 import './App.css';
+
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -31,9 +34,10 @@ function PublicRoute({ children }) {
 
 function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <Router>
+    <ThemeProvider>
+      <AuthProvider>
+        <DataProvider>
+          <Router>
         <div className="app">
           <Routes>
             <Route
@@ -123,6 +127,16 @@ function App() {
               }
             />
             <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Admin />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/bookmarks"
               element={
                 <ProtectedRoute>
@@ -194,9 +208,10 @@ function App() {
             />
           </Routes>
         </div>
-        </Router>
-      </DataProvider>
-    </AuthProvider>
+          </Router>
+        </DataProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

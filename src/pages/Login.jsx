@@ -36,7 +36,7 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-container login-container">
       <div className="auth-card">
         <div className="auth-header">
           <h1>Twitter Clone</h1>
@@ -78,6 +78,15 @@ export default function Login() {
         </form>
 
         <div className="auth-footer">
+          <p>
+            <button
+              type="button"
+              onClick={() => alert('Password reset feature - For demo purposes, use any of the sample passwords like "password123"')}
+              className="forget-password-link"
+            >
+              Forgot password?
+            </button>
+          </p>
           <p>
             Don't have an account? <Link to="/signup">Sign up</Link>
           </p>

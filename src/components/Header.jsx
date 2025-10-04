@@ -44,11 +44,6 @@ export default function Header() {
   return (
     <header className="header">
       <div className="header-content">
-        <div className="header-left">
-          <h1 className="logo" onClick={() => navigate('/')}>
-            Twitter Clone
-          </h1>
-        </div>
 
         <div className="header-center">
           <form onSubmit={handleSearch} className="search-form">

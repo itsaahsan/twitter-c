@@ -10,7 +10,7 @@ export function parseMentions(text) {
   return text.match(mentionRegex) || [];
 }
 
-export function renderTweetText(text) {
+export function renderTweetText(text, onMentionClick = null) {
   // Split text into parts and identify hashtags and mentions
   const parts = text.split(/(\s+)/);
 
@@ -22,8 +22,14 @@ export function renderTweetText(text) {
         </span>
       );
     } else if (part.startsWith('@')) {
+      const username = part.substring(1); // Remove @ symbol
       return (
-        <span key={index} className="mention">
+        <span
+          key={index}
+          className="mention"
+          onClick={() => onMentionClick && onMentionClick(username)}
+          style={{ cursor: 'pointer' }}
+        >
           {part}
         </span>
       );

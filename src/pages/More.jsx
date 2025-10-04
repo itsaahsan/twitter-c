@@ -6,7 +6,6 @@ import {
   Bookmark,
   List,
   Calendar,
-  Palette,
   Shield,
   HelpCircle,
   BarChart3,
@@ -19,6 +18,9 @@ import {
 export default function More() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Check if user is admin (for demo purposes, let's make the first user an admin)
+  const isAdmin = user && (user.id === '1' || user.username === 'admin');
 
   const menuItems = [
     {
@@ -99,6 +101,20 @@ export default function More() {
             </div>
           </div>
         </div>
+
+
+        {isAdmin && (
+          <div className="admin-section">
+            <div className="admin-link" onClick={() => navigate('/admin')}>
+              <Shield size={24} />
+              <div>
+                <span>Admin Dashboard</span>
+                <p>Manage users and content</p>
+              </div>
+              <ChevronRight size={20} />
+            </div>
+          </div>
+        )}
 
         <div className="menu-sections">
           <div className="menu-section">
