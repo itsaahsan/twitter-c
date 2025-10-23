@@ -15,11 +15,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const hasLoggedOut = localStorage.getItem('twitter_logged_out');
     const savedUser = localStorage.getItem('twitter_user');
+    
     if (savedUser) {
       setUser(JSON.parse(savedUser));
-    } else {
-      // Auto-login the first sample user for demo purposes
+      localStorage.removeItem('twitter_logged_out');
+    } else if (!hasLoggedOut) {
       const demoUser = {
         id: "1",
         username: "johndoe",
@@ -42,6 +44,7 @@ export function AuthProvider({ children }) {
       delete userWithoutPassword.password;
       setUser(userWithoutPassword);
       localStorage.setItem('twitter_user', JSON.stringify(userWithoutPassword));
+      localStorage.removeItem('twitter_logged_out');
       return { success: true };
     }
 
@@ -72,6 +75,7 @@ export function AuthProvider({ children }) {
     delete userWithoutPassword.password;
     setUser(userWithoutPassword);
     localStorage.setItem('twitter_user', JSON.stringify(userWithoutPassword));
+    localStorage.removeItem('twitter_logged_out');
 
     return { success: true };
   };
@@ -79,6 +83,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('twitter_user');
+    localStorage.setItem('twitter_logged_out', 'true');
   };
 
   const updateProfile = (updates) => {
